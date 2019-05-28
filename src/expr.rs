@@ -9,6 +9,7 @@ use serde::{
     ser::{SerializeMap, SerializeSeq},
     Serialize,
 };
+use serde_json::Value;
 use std::borrow::Cow;
 
 pub use object::Object;
@@ -31,6 +32,26 @@ pub enum Expr<'a> {
     Array(Vec<Expr<'a>>),
     Set(Box<Set<'a>>),
     Timestamp(DateTime<Utc>),
+}
+
+impl<'a> From<Value> for Expr<'a> {
+    fn from(val: Value) -> Self {
+        match val {
+            Value::Null => Expr::Null,
+            Value::Bool(b) => Expr::from(b),
+            Value::Number(num) => {
+                if num.is_i64() {
+                    Expr::from(num.as_i64().unwrap())
+                } else if num.is_u64() {
+                    Expr::from(num.as_u64().unwrap())
+                } else {
+                    Expr::from(num.as_f64().unwrap())
+                }
+            }
+            Value::String(s) => Expr::from(s),
+            _ => unimplemented!(),
+        }
+    }
 }
 
 impl<'a> Serialize for Expr<'a> {
